@@ -1,0 +1,9 @@
+:root{ --brand:#ff6b35; }
+body{ background:#f8f9fa; }
+.navbar-brand{ letter-spacing:.5px; }
+.hero{
+  background: linear-gradient(180deg, rgba(0,0,0,.5), rgba(0,0,0,.6));
+  color:#fff; border-radius:16px; min-height:320px;
+  display:flex; align-items:center; justify-content:center; text-align:center;
+}
+.btn-brand{ background:var(--brand); border:none; }
