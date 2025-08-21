@@ -70,7 +70,12 @@ $stmt->close();
             <?php endwhile; $it->close(); ?>
           </ul>
 
-          <a class="btn btn-sm btn-outline-primary" href="/restaurant-ms/orders/invoice.php?order_id=<?php echo (int)$o['id']; ?>">Download Invoice (PDF)</a>
+          <!-- <a class="btn btn-sm btn-outline-primary" href="/restaurant-ms/orders/invoice.php?order_id=<?php echo (int)$o['id']; ?>">Download Bill pdf</a> -->
+           <a class="btn btn-sm btn-outline-primary" 
+   href="/restaurant-ms/orders/invoice.php?order_id=<?php echo (int)$o['id']; ?>">
+   See Your Bill Status
+</a>
+
         </div>
       </div>
     <?php endforeach; ?>

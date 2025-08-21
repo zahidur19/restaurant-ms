@@ -1,51 +1,123 @@
 <?php
 session_start();
+if(!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'customer'){
+    header("Location: ../auth/login.php");
+    exit;
+}
+
 require_once __DIR__ . "/../includes/config.php";
 
-if (!isset($_GET['id'])) { die("Invalid Request!"); }
-$order_id = (int)$_GET['id'];
+// helper
+function h($s){ return htmlspecialchars($s ?? "", ENT_QUOTES, 'UTF-8'); }
 
-// Order Info
-$sql = "SELECT o.id, u.name, u.email, o.total, o.status, o.created_at
-        FROM orders o
-        JOIN users u ON u.id = o.user_id
-        WHERE o.id = $order_id";
-$order = mysqli_fetch_assoc(mysqli_query($conn, $sql));
-if (!$order) { die("Order not found!"); }
+// ================= Order ID Check =================
+if(!isset($_GET['order_id'])){
+    die("❌ Order ID missing.");
+}
+$order_id = (int)$_GET['order_id'];
+$user_id  = (int)$_SESSION['user']['id'];
 
-// Order Items
-$sql_items = "SELECT m.name, oi.qty, oi.price
-              FROM order_items oi
-              JOIN menu m ON m.id = oi.menu_id
-              WHERE oi.order_id = $order_id";
-$items = mysqli_query($conn, $sql_items);
+// ================= Order Info =================
+$stmt = $conn->prepare("SELECT id, total, status, created_at 
+                        FROM orders 
+                        WHERE id=? AND user_id=? LIMIT 1");
+$stmt->bind_param("ii", $order_id, $user_id);
+$stmt->execute();
+$order = $stmt->get_result()->fetch_assoc();
+$stmt->close();
 
-include __DIR__ . "/../includes/header.php";
+if(!$order){
+    die("❌ Invalid order or access denied.");
+}
+
+// ================= Order Items =================
+$items = [];
+$stmt = $conn->prepare("SELECT oi.qty, oi.price, m.name 
+                        FROM order_items oi 
+                        JOIN menu m ON oi.menu_id = m.id 
+                        WHERE oi.order_id = ?");
+$stmt->bind_param("i", $order_id);
+$stmt->execute();
+$res = $stmt->get_result();
+while($row = $res->fetch_assoc()){ $items[] = $row; }
+$stmt->close();
 ?>
-<div class="container mt-4">
-  <h2>Invoice #<?php echo $order['id']; ?></h2>
-  <p><b>Customer:</b> <?php echo htmlspecialchars($order['name']); ?> (<?php echo htmlspecialchars($order['email']); ?>)</p>
-  <p><b>Status:</b> <?php echo htmlspecialchars($order['status']); ?></p>
-  <p><b>Date:</b> <?php echo htmlspecialchars($order['created_at']); ?></p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice #<?php echo $order['id']; ?></title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #f9f9f9;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 80%;
+            margin: 15px auto;
+            border-collapse: collapse;
+            background: #fff;
+            box-shadow: 0px 0px 8px rgba(0,0,0,0.1);
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background: #eee;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h2>Restaurant Bill Invoice</h2>
 
-  <table class="table table-bordered mt-3">
-    <thead>
-      <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
-    </thead>
-    <tbody>
-      <?php while($r = mysqli_fetch_assoc($items)): ?>
+    <table>
+        <tr><th>Invoice Header</th><th>Value</th></tr>
+        <tr><td>Order ID</td><td>#<?php echo (int)$order['id']; ?></td></tr>
+        <tr><td>Date</td><td><?php echo h($order['created_at']); ?></td></tr>
+        <tr><td>Customer</td><td><?php echo h($_SESSION['user']['name']); ?></td></tr>
+        <tr><td>Status</td><td><?php echo ucfirst($order['status']); ?></td></tr>
+    </table>
+
+    <table>
         <tr>
-          <td><?php echo htmlspecialchars($r['name']); ?></td>
-          <td><?php echo (int)$r['qty']; ?></td>
-          <td><?php echo number_format($r['price'],2); ?></td>
-          <td><?php echo number_format($r['qty']*$r['price'],2); ?></td>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Price (৳)</th>
+            <th>Total (৳)</th>
         </tr>
-      <?php endwhile; ?>
-    </tbody>
-  </table>
+        <?php 
+        $grandTotal = 0;
+        foreach($items as $it): 
+            $lineTotal = $it['qty'] * $it['price'];
+            $grandTotal += $lineTotal;
+        ?>
+        <tr>
+            <td><?php echo h($it['name']); ?></td>
+            <td><?php echo (int)$it['qty']; ?></td>
+            <td><?php echo number_format($it['price'], 2); ?></td>
+            <td><?php echo number_format($lineTotal, 2); ?></td>
+        </tr>
+        <?php endforeach; ?>
+        <tr>
+            <th colspan="3">Grand Total</th>
+            <th>৳ <?php echo number_format($grandTotal, 2); ?></th>
+        </tr>
+    </table>
 
-  <h4>Grand Total: ৳ <?php echo number_format($order['total'],2); ?></h4>
-
-  <a class="btn btn-primary mt-3" href="invoice_pdf.php?id=<?php echo (int)$order['id']; ?>">Download PDF</a>
-</div>
-<?php include __DIR__ . "/../includes/footer.php"; ?>
+    <div class="footer">
+        Thank you for ordering with us! 🍽️
+    </div>
+</body>
+</html>

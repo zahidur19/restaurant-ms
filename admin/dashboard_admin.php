@@ -13,13 +13,26 @@ include('../includes/header.php');
     <h2 class="mb-4">👨‍💼 Admin Dashboard</h2>
 
     <div class="row mb-4">
+
+      <!-- Reports -->
+<div class="col-md-3">
+    <div class="card shadow-sm border-0">
+        <div class="card-body text-center">
+            <h5 class="card-title">📊 Reports</h5>
+            <p class="card-text">View Sales & Analytics.</p>
+            <a href="reports.php" class="btn btn-success btn-sm">Go</a>
+        </div>
+    </div>
+</div>
+
+
         <!-- Manage Menu -->
         <div class="col-md-3">
             <div class="card shadow-sm border-0">
                 <div class="card-body text-center">
                     <h5 class="card-title">🍔 Manage Menu</h5>
                     <p class="card-text">Add, update & delete food items.</p>
-                    <a href="menu_manage.php" class="btn btn-primary btn-sm">Go</a>
+                    <!-- <a href="menu_manage.php" class="btn btn-primary btn-sm">Go</a> -->
                 </div>
             </div>
         </div>
@@ -30,12 +43,12 @@ include('../includes/header.php');
                 <div class="card-body text-center">
                     <h5 class="card-title">📦 Manage Orders</h5>
                     <p class="card-text">View & update all customer orders.</p>
-                    <a href="orders_manage.php" class="btn btn-warning btn-sm">Go</a>
+                    <!-- <a href="orders_manage.php" class="btn btn-warning btn-sm">Go</a> -->
                 </div>
             </div>
         </div>
 
-        <!-- Manage Users -->
+        <!-- Manage Users
         <div class="col-md-3">
             <div class="card shadow-sm border-0">
                 <div class="card-body text-center">
@@ -45,18 +58,9 @@ include('../includes/header.php');
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
-    <!-- Reports -->
-<div class="col-md-3">
-    <div class="card shadow-sm border-0">
-        <div class="card-body text-center">
-            <h5 class="card-title">📊 Reports</h5>
-            <p class="card-text">View Sales & Analytics.</p>
-            <a href="reports.php" class="btn btn-success btn-sm">Go</a>
-        </div>
-    </div>
-</div>
+    
 
 
     <!-- ================= Reports Section ================= -->

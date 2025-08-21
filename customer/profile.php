@@ -71,7 +71,7 @@ if($res) {
       </tbody>
     </table>
   <?php else: ?>
-    <div class="alert alert-info">I have no order , because i am admin.</div>
+    <div class="alert alert-info">I can not order any menu.</div>
   <?php endif; ?>
 </div>
 
