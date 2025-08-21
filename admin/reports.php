@@ -6,7 +6,7 @@ if(!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin'){
 }
 include('../includes/config.php');
 include('../includes/header.php');
-include('../includes/navbar.php');
+
 ?>
 
 <div class="container mt-4">
@@ -21,192 +21,90 @@ include('../includes/navbar.php');
                                    FROM orders 
                                    WHERE status='completed' 
                                    GROUP BY DATE(created_at) 
-                                   ORDER BY order_date DESC LIMIT 7");
+                                   ORDER BY order_date ASC LIMIT 7");
 
-    // Top Items
-    $top_items = $conn->query("SELECT f.name, SUM(o.quantity) as total_qty 
-                               FROM orders o 
-                               JOIN foods f ON o.food_id=f.id 
-                               GROUP BY o.food_id 
-                               ORDER BY total_qty DESC LIMIT 5");
+    $sales_dates = [];
+    $sales_amounts = [];
+    while($row = $sales_per_day->fetch_assoc()){
+        $sales_dates[] = $row['order_date'];
+        $sales_amounts[] = $row['daily_sales'];
+    }
 
     // Orders by Status
     $status = $conn->query("SELECT status, COUNT(*) as total 
                             FROM orders 
                             GROUP BY status");
+
+    $status_labels = [];
+    $status_counts = [];
+    while($row = $status->fetch_assoc()){
+        $status_labels[] = ucfirst($row['status']);
+        $status_counts[] = $row['total'];
+    }
     ?>
 
     <!-- Total Sales -->
     <div class="card mb-4 shadow-sm">
-        <div class="card-body">
+        <div class="card-body text-center">
             <h5>Total Sales</h5>
             <h3>৳ <?php echo $sales['total_sales'] ?? 0; ?></h3>
         </div>
     </div>
 
-    <!-- Sales Per Day -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <h5>📅 Sales (Last 7 Days)</h5>
-            <canvas id="salesChart" height="120"></canvas>
-            <table class="table table-sm mt-3">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Sales (৳)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                    $sales_per_day->data_seek(0); 
-                    while($row = $sales_per_day->fetch_assoc()): ?>
-                        <tr>
-                            <td><?php echo $row['order_date']; ?></td>
-                            <td><?php echo $row['daily_sales']; ?></td>
-                        </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Top Items & Status -->
     <div class="row">
-        <!-- Top Items -->
+        <!-- Sales Chart -->
         <div class="col-md-6">
-            <div class="card mb-4 shadow-sm">
+            <div class="card shadow-sm mb-4">
                 <div class="card-body">
-                    <h5>🥇 Top 5 Selling Items</h5>
-                    <canvas id="itemsChart" height="200"></canvas>
-                    <table class="table table-sm mt-3">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Qty Sold</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php 
-                            $top_items->data_seek(0);
-                            while($row = $top_items->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?php echo $row['name']; ?></td>
-                                    <td><?php echo $row['total_qty']; ?></td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
+                    <h5>📅 Sales (Last 7 Days)</h5>
+                    <canvas id="salesChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Orders by Status -->
+        <!-- Orders by Status Chart -->
         <div class="col-md-6">
-            <div class="card mb-4 shadow-sm">
+            <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <h5>📌 Orders by Status</h5>
-                    <canvas id="statusChart" height="200"></canvas>
-                    <table class="table table-sm mt-3">
-                        <thead>
-                            <tr>
-                                <th>Status</th>
-                                <th>Orders</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php 
-                            $status->data_seek(0);
-                            while($row = $status->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?php echo ucfirst($row['status']); ?></td>
-                                    <td><?php echo $row['total']; ?></td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
+                    <canvas id="statusChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
-
 </div>
 
-<!-- Chart.js -->
+<!-- Load Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
-// Sales Per Day Chart
-const salesCtx = document.getElementById('salesChart');
-new Chart(salesCtx, {
-    type: 'bar',
+// Sales Chart
+const ctx1 = document.getElementById('salesChart').getContext('2d');
+new Chart(ctx1, {
+    type: 'line',
     data: {
-        labels: [<?php 
-            $sales_per_day->data_seek(0);
-            while($row = $sales_per_day->fetch_assoc()){ echo "'".$row['order_date']."',"; } 
-        ?>],
+        labels: <?php echo json_encode($sales_dates); ?>,
         datasets: [{
             label: 'Daily Sales (৳)',
-            data: [<?php 
-            $sales_per_day->data_seek(0);
-            while($row = $sales_per_day->fetch_assoc()){ echo $row['daily_sales'].","; } 
-        ?>],
-            backgroundColor: 'rgba(54, 162, 235, 0.6)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1
+            data: <?php echo json_encode($sales_amounts); ?>,
+            borderColor: 'blue',
+            backgroundColor: 'rgba(0,123,255,0.2)',
+            fill: true,
+            tension: 0.3
         }]
-    },
-    options: { responsive: true, scales: { y: { beginAtZero: true } } }
-});
-
-// Top Items Chart
-const itemsCtx = document.getElementById('itemsChart');
-new Chart(itemsCtx, {
-    type: 'doughnut',
-    data: {
-        labels: [<?php 
-            $top_items->data_seek(0);
-            while($row = $top_items->fetch_assoc()){ echo "'".$row['name']."',"; } 
-        ?>],
-        datasets: [{
-            data: [<?php 
-            $top_items->data_seek(0);
-            while($row = $top_items->fetch_assoc()){ echo $row['total_qty'].","; } 
-        ?>],
-            backgroundColor: [
-                'rgba(255, 99, 132, 0.7)',
-                'rgba(54, 162, 235, 0.7)',
-                'rgba(255, 206, 86, 0.7)',
-                'rgba(75, 192, 192, 0.7)',
-                'rgba(153, 102, 255, 0.7)'
-            ]
-        }]
-    },
-    options: { responsive: true }
+    }
 });
 
 // Orders by Status Chart
-const statusCtx = document.getElementById('statusChart');
-new Chart(statusCtx, {
+const ctx2 = document.getElementById('statusChart').getContext('2d');
+new Chart(ctx2, {
     type: 'pie',
     data: {
-        labels: [<?php 
-            $status->data_seek(0);
-            while($row = $status->fetch_assoc()){ echo "'".ucfirst($row['status'])."',"; } 
-        ?>],
+        labels: <?php echo json_encode($status_labels); ?>,
         datasets: [{
-            data: [<?php 
-            $status->data_seek(0);
-            while($row = $status->fetch_assoc()){ echo $row['total'].","; } 
-        ?>],
-            backgroundColor: [
-                'rgba(255, 159, 64, 0.7)',
-                'rgba(54, 162, 235, 0.7)',
-                'rgba(75, 192, 192, 0.7)',
-                'rgba(255, 99, 132, 0.7)'
-            ]
+            data: <?php echo json_encode($status_counts); ?>,
+            backgroundColor: ['#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6f42c1']
         }]
-    },
-    options: { responsive: true }
+    }
 });
 </script>
 

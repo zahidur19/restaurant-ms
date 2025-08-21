@@ -9,7 +9,7 @@ if(!isset($_SESSION['user'])) {
 
 $user = $_SESSION['user'];
 
-// অর্ডার ডাটা নিয়ে আসি
+
 $sql = "SELECT o.id, o.total, o.status, o.created_at 
         FROM orders o 
         WHERE o.user_id = ".$user['id']." 
@@ -71,7 +71,7 @@ if($res) {
       </tbody>
     </table>
   <?php else: ?>
-    <div class="alert alert-info">You have no orders yet.</div>
+    <div class="alert alert-info">I have no order , because i am admin.</div>
   <?php endif; ?>
 </div>
 
