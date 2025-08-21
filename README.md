@@ -68,5 +68,9 @@ This system digitalizes a restaurant’s daily operations: **menu management, cu
 | Server        | XAMPP / LAMP / WAMP |
 
 ---
+###  Project Video
+ - I attach my project Video link in Project Video folder.
 
 
+### Project Reports in SRS Documents Folder
+ - I attach my project Report pdf link in SRS Documents  folder.
